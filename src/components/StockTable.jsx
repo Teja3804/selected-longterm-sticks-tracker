@@ -42,44 +42,82 @@ const StockTable = ({ stocks, isLoading }) => {
     return 'risk-high';
   };
 
-  // Calculate y values for each stock
-  const calculateY = (stock) => {
+  // Calculate k = buyIndex / riskIndex for each stock
+  const calculateK = (stock) => {
     if (stock.buyIndex === null || stock.buyIndex === undefined || 
         stock.riskIndex === null || stock.riskIndex === undefined || 
         stock.riskIndex === 0) {
       return null;
     }
-    
-    const x = (stock.buyIndex * 10) / stock.riskIndex;
+    return stock.buyIndex / stock.riskIndex;
+  };
+
+  // Calculate y = (1 + gainLoss/100) * (buyIndex / riskIndex)
+  const calculateY = (stock) => {
+    const k = calculateK(stock);
+    if (k === null) return null;
     
     if (stock.gainLoss === null || stock.gainLoss === undefined) {
       return null;
     }
     
     const profitMultiplier = 1 + (stock.gainLoss / 100);
-    const y = x * profitMultiplier;
+    const y = profitMultiplier * k;
     
     return y;
   };
 
-  // Calculate net (sum of all y values)
-  const calculateNet = () => {
-    const yValues = stocks
-      .map(calculateY)
-      .filter(y => y !== null);
+  // Calculate d = dividendPercent * (buyIndex / riskIndex) for each stock
+  const calculateD = (stock) => {
+    const k = calculateK(stock);
+    if (k === null) return null;
     
-    if (yValues.length === 0) return null;
+    if (stock.dividendPercent === null || stock.dividendPercent === undefined) {
+      return null;
+    }
     
-    return yValues.reduce((sum, y) => sum + y, 0);
+    return stock.dividendPercent * k;
   };
 
-  const net = calculateNet();
-
-  // Calculate percentage if invested in all
-  const calculateInvestmentPercentage = (y) => {
-    if (y === null || y === undefined) return null;
-    return (y * 100) / 350;
+  // Calculate cumulative profit/loss: Σy / Σk
+  const calculateCumulativeProfitLoss = () => {
+    const validStocks = stocks.filter(stock => {
+      const y = calculateY(stock);
+      const k = calculateK(stock);
+      return y !== null && k !== null;
+    });
+    
+    if (validStocks.length === 0) return null;
+    
+    const sumY = validStocks.reduce((sum, stock) => sum + calculateY(stock), 0);
+    const sumK = validStocks.reduce((sum, stock) => sum + calculateK(stock), 0);
+    
+    if (sumK === 0) return null;
+    
+    // Return as percentage: (Σy / Σk - 1) * 100
+    return ((sumY / sumK) - 1) * 100;
   };
+
+  // Calculate cumulative dividend interest: Σd / Σk
+  const calculateCumulativeDividend = () => {
+    const validStocks = stocks.filter(stock => {
+      const d = calculateD(stock);
+      const k = calculateK(stock);
+      return d !== null && k !== null;
+    });
+    
+    if (validStocks.length === 0) return null;
+    
+    const sumD = validStocks.reduce((sum, stock) => sum + calculateD(stock), 0);
+    const sumK = validStocks.reduce((sum, stock) => sum + calculateK(stock), 0);
+    
+    if (sumK === 0) return null;
+    
+    return (sumD / sumK);
+  };
+
+  const cumulativeProfitLoss = calculateCumulativeProfitLoss();
+  const cumulativeDividend = calculateCumulativeDividend();
 
   return (
     <div className="stock-table-container">
@@ -93,21 +131,20 @@ const StockTable = ({ stocks, isLoading }) => {
             <th>Dividend %</th>
             <th>Buy Index</th>
             <th>Risk Index</th>
-            <th>Net</th>
-            <th>% if Invested in All</th>
+            <th>If Invested in All (y)</th>
           </tr>
         </thead>
         <tbody>
           {isLoading ? (
             <tr>
-              <td colSpan="9" className="loading-cell">
+              <td colSpan="8" className="loading-cell">
                 <div className="loading-spinner"></div>
                 Loading stock data...
               </td>
             </tr>
           ) : stocks.length === 0 ? (
             <tr>
-              <td colSpan="9" className="empty-cell">
+              <td colSpan="8" className="empty-cell">
                 No stock data available
               </td>
             </tr>
@@ -115,7 +152,6 @@ const StockTable = ({ stocks, isLoading }) => {
             <>
               {stocks.map((stock, index) => {
                 const y = calculateY(stock);
-                const investmentPercent = calculateInvestmentPercentage(y);
                 
                 return (
                   <tr key={index}>
@@ -141,23 +177,27 @@ const StockTable = ({ stocks, isLoading }) => {
                       {formatIndex(stock.riskIndex)}
                     </td>
                     <td className="net-value">
-                      {y !== null ? y.toFixed(2) : 'N/A'}
-                    </td>
-                    <td className="investment-percent">
-                      {investmentPercent !== null ? `${investmentPercent.toFixed(2)}%` : 'N/A'}
+                      {y !== null ? y.toFixed(4) : 'N/A'}
                     </td>
                   </tr>
                 );
               })}
-              {/* Summary row with total net */}
+              {/* Summary rows with cumulative profit/loss and dividend */}
               <tr className="summary-row">
                 <td colSpan="7" className="summary-label">
-                  <strong>Total Net (Σy):</strong>
+                  <strong>Accumulated Profit/Loss %:</strong>
                 </td>
-                <td className="net-value summary-net">
-                  <strong>{net !== null ? net.toFixed(2) : 'N/A'}</strong>
+                <td className={`gain-loss summary-avg ${getGainLossClass(cumulativeProfitLoss)}`}>
+                  <strong>{cumulativeProfitLoss !== null ? formatPercentage(cumulativeProfitLoss) : 'N/A'}</strong>
                 </td>
-                <td className="investment-percent"></td>
+              </tr>
+              <tr className="summary-row">
+                <td colSpan="7" className="summary-label">
+                  <strong>Cumulative Dividend Interest %:</strong>
+                </td>
+                <td className="dividend summary-avg">
+                  <strong>{cumulativeDividend !== null ? `${cumulativeDividend.toFixed(2)}%` : 'N/A'}</strong>
+                </td>
               </tr>
             </>
           )}
