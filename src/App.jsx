@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { stockData } from './stockData';
+import { techStockData } from './techStockData';
+import { preciousMetalsData } from './preciousMetalsData';
 import { fetchAllStockPrices } from './api/stockApi';
 import StockTable from './components/StockTable';
+import SimpleStockTable from './components/SimpleStockTable';
 import './App.css';
 
 function App() {
   const [stocks, setStocks] = useState([]);
+  const [techStocks, setTechStocks] = useState([]);
+  const [preciousMetals, setPreciousMetals] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
 
@@ -17,11 +22,41 @@ function App() {
   const updateStockPrices = useCallback(async () => {
     setIsLoading(true);
     try {
-      const symbols = stockData.map(stock => stock.symbol);
-      const priceMap = await fetchAllStockPrices(symbols);
+      // Collect all symbols from all three data sources
+      const allSymbols = [
+        ...stockData.map(stock => stock.symbol),
+        ...techStockData.map(stock => stock.symbol),
+        ...preciousMetalsData.map(stock => stock.symbol),
+      ];
       
+      const priceMap = await fetchAllStockPrices(allSymbols);
+      
+      // Update main stocks
       const updatedStocks = stockData.map(stock => {
-        // Ensure symbol lookup uses uppercase to match priceMap keys
+        const symbolKey = stock.symbol.toUpperCase().trim();
+        const currentPrice = priceMap[symbolKey] || null;
+        
+        return {
+          ...stock,
+          currentPrice: currentPrice,
+          gainLoss: calculateGainLoss(stock.entryPrice, currentPrice),
+        };
+      });
+      
+      // Update tech stocks
+      const updatedTechStocks = techStockData.map(stock => {
+        const symbolKey = stock.symbol.toUpperCase().trim();
+        const currentPrice = priceMap[symbolKey] || null;
+        
+        return {
+          ...stock,
+          currentPrice: currentPrice,
+          gainLoss: calculateGainLoss(stock.entryPrice, currentPrice),
+        };
+      });
+      
+      // Update precious metals
+      const updatedPreciousMetals = preciousMetalsData.map(stock => {
         const symbolKey = stock.symbol.toUpperCase().trim();
         const currentPrice = priceMap[symbolKey] || null;
         
@@ -33,6 +68,8 @@ function App() {
       });
       
       setStocks(updatedStocks);
+      setTechStocks(updatedTechStocks);
+      setPreciousMetals(updatedPreciousMetals);
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Error updating stock prices:', error);
@@ -90,6 +127,18 @@ function App() {
         </div>
 
         <StockTable stocks={stocks} isLoading={isLoading} />
+        
+        <SimpleStockTable 
+          stocks={techStocks} 
+          isLoading={isLoading} 
+          title="Tech Stocks"
+        />
+        
+        <SimpleStockTable 
+          stocks={preciousMetals} 
+          isLoading={isLoading} 
+          title="Precious Metals"
+        />
       </div>
     </div>
   );
