@@ -7,6 +7,6 @@ export const techStockData = [
   { name: "Meta", symbol: "META", entryPrice: 632 },
   { name: "AMD", symbol: "AMD", entryPrice: 244 },
   { name: "Apple", symbol: "AAPL", entryPrice: 269.5 },
-  { name: "NASDAQ", symbol: "QQQ", entryPrice: 470 }, // Using QQQ ETF as proxy (entry price adjusted: QQQ ~$470 when NASDAQ Composite ~$23530)
+  { name: "NASDAQ", symbol: "QQQ", entryPrice: 623.5 }, // Using QQQ ETF as proxy
 ];
 
