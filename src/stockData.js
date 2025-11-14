@@ -6,7 +6,7 @@ export const stockData = [
   { name: "General Mills", symbol: "GIS", entryPrice: 46, dividendPercent: 5.3, buyIndex: 7.5, riskIndex: 8 },
   { name: "Kellanova", symbol: "K", entryPrice: 83, dividendPercent: 2.7, buyIndex: 7, riskIndex: 5 },
   { name: "JM Smucker Company", symbol: "SJM", entryPrice: 107, dividendPercent: 4, buyIndex: 6, riskIndex: 8 },
-  { name: "B&G Foods Inc", symbol: "BGS", entryPrice: 4.6, dividendPercent: 17, buyIndex: null, riskIndex: null },
+  { name: "B&G Foods Inc", symbol: "BGS", entryPrice: 4.6, dividendPercent: 17, buyIndex: 7, riskIndex: 10 },
   { name: "Hormel Food Corporation", symbol: "HRL", entryPrice: 22, dividendPercent: 5.2, buyIndex: 7, riskIndex: 9 },
   { name: "Bunge Limited", symbol: "BG", entryPrice: 95, dividendPercent: 3, buyIndex: 8, riskIndex: 5 },
   { name: "Hershey Co", symbol: "HSY", entryPrice: 169, dividendPercent: 3, buyIndex: 5, riskIndex: 8 },
